@@ -10,11 +10,16 @@ const wss = new WebSocketServer({ port: 8080 });
 
 wss.on('connection', function connection(ws) {
   ws.on('message', async function message(data) {
-    console.log('query', data);
-    const res = await db.any(data.toString());
-    ws.send(JSON.stringify({res},null,2));
+    try {
+      const msg = JSON.parse(data);
+      console.log({msg});
+      const rows = await db.any(msg.sql);
+      ws.send(JSON.stringify({rows},null,2));
+    } catch ( err ) {
+      console.log(err);
+      ws.send("");
+    };
   });
-
-  ws.send('something');
+  ws.send("");
 });
 

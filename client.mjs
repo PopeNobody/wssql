@@ -1,42 +1,48 @@
 #!/opt/bin/node
-import {readFileSync} from 'fs';
-const config = readFileSync("config.json");
-
 import {WebSocket} from 'ws';
-//   const ws = require('ws');
-//   const WebSocket=ws.WebSocket;
+import readline from 'readline';
 
-//   let socket = new WebSocket("wss://127.0.0.1:8080/");
-//   
-//   function setItUp(delay) {
-//     setTimeout(()=>{ socket.send("My name is John"); }, delay+250);
-//     setTimeout(()=>{ socket.send("My name is Paul"); }, delay+500);
-//     setTimeout(()=>{ socket.send("My name is George"); }, delay+750);
-//     setTimeout(()=>{ socket.send("My name is Ringo"); }, delay+1000);
-//   }
-//   socket.onopen = function(e) {
-//     console.log("[open] Connection established");
-//     console.log("Sending to server");
-//     setItUp(0);
-//     setItUp(500);
-//     setItUp(750);
-//   };
-//   
-//   socket.onmessage = function(event) {
-//     console.log(`[message] Data received from server: ${event.data}`);
-//   };
-//   
-//   socket.onclose = function(event) {
-//     if (event.wasClean) {
-//       console.log(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
-//     } else {
-//       // e.g. server process killed or network down
-//       // event.code is usually 1006 in this case
-//       console.log('[close] Connection died');
-//     }
-//   };
-//   
-//   socket.onerror = function(error) {
-//     console.log(`[error] ${error.message}`);
-//   };
-//   
+const input=process.stdin;
+const output=process.stdout;
+
+const rl=readline.createInterface({input,output,historyfile: "history"});
+
+
+let socket = new WebSocket("ws://127.0.0.1:8080/");
+   
+socket.onopen = function(e) {
+  console.log("[open] Connection established");
+};
+   
+socket.onmessage = function(event) {
+  if(event.data.length!=0) {
+    console.log(`[message] Data received from server: ${JSON.stringify(JSON.parse(event.data))}`);
+    if(event.data[0]=='{'){
+      const rows = JSON.parse(event.data)
+      if(rows.rows){
+        console.table(rows.rows);
+      }
+    }
+  };
+  rl.on('close', ()=>{
+    rl.close();
+  });
+  rl.question("sql> ",(sql)=>{
+    socket.send(JSON.stringify({sql}));
+  });
+};
+   
+socket.onclose = function(event) {
+  if (event.wasClean) {
+    console.log(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+  } else {
+    // e.g. server process killed or network down
+    // event.code is usually 1006 in this case
+    console.log('[close] Connection died');
+  }
+};
+   
+socket.onerror = function(error) {
+  console.log(`[error] ${error.message}`);
+};
+
